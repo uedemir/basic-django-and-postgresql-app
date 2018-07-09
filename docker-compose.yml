@@ -2,13 +2,39 @@ version: '3'
 
 services:
   db:
-    image: postgres
+    image: postgres:alpine
+    env_file:
+      - ./env/dev.env
+    volumes:
+      - code:/tmp/pgdata
+
   web:
     build: .
-    command: python3 manage.py runserver 0.0.0.0:8000
+    depends_on:
+      - db
+    restart: unless-stopped
+    command: bash -c "python3 manage.py runserver 0.0.0.0:8000"
+    env_file:
+      - ./env/dev.env
     volumes:
       - .:/code
     ports:
       - "8000:8000"
-    depends_on:
+    entrypoint: /entrypoint.sh
+    links:
       - db
+
+  pgadmin:
+    links:
+      - db
+    image: fenglc/pgadmin4
+    ports:
+      - "5050:5050"
+    env_file:
+      - ./env/dev.env
+    volumes:
+       - code:/root/.pgadmin
+    restart: unless-stopped
+
+volumes:
+    code:
